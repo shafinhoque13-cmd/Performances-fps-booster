@@ -6,10 +6,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Updated to v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4 # Updated to v4
         with:
           dotnet-version: '6.0.x'
 
@@ -17,7 +17,7 @@ jobs:
         run: dotnet build /p:Configuration=Release
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # Updated to v4
         with:
           name: PerformanceBooster-DLL
           path: bin/Release/netstandard2.0/PerformanceBooster.dll
