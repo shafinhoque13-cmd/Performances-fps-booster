@@ -1,75 +1,58 @@
-using BepInEx;
 using UnityEngine;
+using BepInEx;
 
-namespace MobileBridge
+[BepInPlugin("com.ershad.fpsbooster", "Silksong Lightweight Mod", "1.6.0")]
+public class Plugin : BaseUnityPlugin
 {
-    [BepInPlugin("com.shafin.bridge", "MobileBridge", "1.4.3")]
-    public class Plugin : BaseUnityPlugin
+    private Rect windowRect = new Rect(50, 50, 300, 200);
+    private Rect buttonRect = new Rect(10, 100, 120, 120); // Bigger for easy touch
+    private bool showMenu = false;
+    private float deltaTime = 0.0f;
+
+    void Update()
     {
-        private bool _active = true;
-        private Rect _winRect = new Rect(100, 100, 250, 120);
-        private bool _isDragging = false;
-        private Vector2 _dragOffset;
+        deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
 
-        void OnGUI()
+        if (Input.touchCount > 0)
         {
-            GUI.depth = -1000;
-            float s = Screen.height / 1080f;
-            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(s, s, 1));
+            Touch t = Input.GetTouch(0);
+            // Flip Y coordinate because GUI and Input use different origins
+            Vector2 touchPos = new Vector2(t.position.x, Screen.height - t.position.y);
 
-            // Manual Touch Handling for Moving the Bubble
-            HandleDrag(s);
-
-            _winRect = GUI.Window(0, _winRect, DrawWindow, "Bridge (Drag Me)");
-        }
-
-        void HandleDrag(float scale)
-        {
-            Vector2 mousePos = new Vector2(Input.mousePosition.x / scale, (Screen.height - Input.mousePosition.y) / scale);
-
-            if (Input.GetMouseButtonDown(0) && _winRect.Contains(mousePos))
+            if (t.phase == TouchPhase.Moved || t.phase == TouchPhase.Stationary)
             {
-                _isDragging = true;
-                _dragOffset = mousePos - new Vector2(_winRect.x, _winRect.y);
-            }
-
-            if (_isDragging)
-            {
-                _winRect.x = mousePos.x - _dragOffset.x;
-                _winRect.y = mousePos.y - _dragOffset.y;
-            }
-
-            if (Input.GetMouseButtonUp(0)) _isDragging = false;
-        }
-
-        void DrawWindow(int id)
-        {
-            string statusColor = _active ? "cyan" : "red";
-            if (GUILayout.Button($"<color={statusColor}>BRIDGE: {(_active ? "ON" : "OFF")}</color>", GUILayout.ExpandHeight(true)))
-                _active = !_active;
-        }
-
-        void Update()
-        {
-            if (!_active) return;
-
-            // Bench Bypass Logic
-            GameObject pd = GameObject.Find("PlayerData");
-            if (pd != null)
-            {
-                pd.SendMessage("SetBool", new object[] { "atBench", true }, SendMessageOptions.DontRequireReceiver);
-                pd.SendMessage("SetBool", new object[] { "canEquip", true }, SendMessageOptions.DontRequireReceiver);
-            }
-
-            // UI Interaction Unlock
-            GameObject[] allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-            foreach (GameObject obj in allObjects)
-            {
-                if (obj.name.ToLower().Contains("equip") || obj.name.ToLower().Contains("slot"))
+                // Drag the small "MOD" button
+                if (buttonRect.Contains(touchPos) && !showMenu)
                 {
-                    obj.SendMessage("set_interactable", true, SendMessageOptions.DontRequireReceiver);
+                    buttonRect.center = touchPos;
+                }
+                // Drag the status menu
+                else if (showMenu && windowRect.Contains(touchPos))
+                {
+                    windowRect.center = touchPos;
                 }
             }
+        }
+    }
+
+    void OnGUI()
+    {
+        // 1. Always show the draggable toggle button
+        buttonRect = GUI.Window(1, buttonRect, (id) => {
+            if (GUI.Button(new Rect(5, 5, 110, 110), "MOD")) showMenu = !showMenu;
+            GUI.DragWindow(); 
+        }, "");
+
+        // 2. Show the main status menu
+        if (showMenu)
+        {
+            windowRect = GUI.Window(0, windowRect, (id) => {
+                float fps = 1.0f / deltaTime;
+                GUI.Label(new Rect(10, 30, 280, 40), $"FPS: {fps:0.} / 60");
+                GUI.Label(new Rect(10, 70, 280, 40), "Status: BOOSTING");
+                if (GUI.Button(new Rect(10, 130, 280, 50), "HIDE")) showMenu = false;
+                GUI.DragWindow();
+            }, "Silksong Booster");
         }
     }
 }
