@@ -4,7 +4,6 @@
     <AssemblyName>PerformanceBooster</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
-    
     <NoWarn>MSB3277</NoWarn>
   </PropertyGroup>
 
@@ -14,6 +13,10 @@
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>libs/UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>libs/UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
     
     <Reference Include="UnityEngine.IMGUIModule">
