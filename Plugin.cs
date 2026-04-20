@@ -1,92 +1,75 @@
-using UnityEngine;
 using BepInEx;
+using UnityEngine;
 
-[BepInPlugin("com.ershad.fpsbooster", "Silksong Lightweight Mod", "1.4.0")]
-public class Plugin : BaseUnityPlugin
+namespace MobileBridge
 {
-    // Window and Button Positions
-    private Rect windowRect = new Rect(20, 20, 280, 180);
-    private Rect buttonRect = new Rect(Screen.width - 120, 100, 80, 80); // Floating toggle button
-    
-    private bool showMenu = false;
-    private float deltaTime = 0.0f;
-
-    void Awake()
+    [BepInPlugin("com.shafin.bridge", "MobileBridge", "1.4.3")]
+    public class Plugin : BaseUnityPlugin
     {
-        Application.targetFrameRate = 60;
-        QualitySettings.vSyncCount = 0;
-        QualitySettings.shadows = ShadowQuality.Disable;
-        QualitySettings.masterTextureLimit = 1;
-        QualitySettings.softParticles = false;
-        
-        Logger.LogInfo("Mod Loaded: Floating Toggle Button Active.");
-    }
+        private bool _active = true;
+        private Rect _winRect = new Rect(100, 100, 250, 120);
+        private bool _isDragging = false;
+        private Vector2 _dragOffset;
 
-    void Update()
-    {
-        deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
-        
-        if (Application.targetFrameRate != 60) Application.targetFrameRate = 60;
-
-        // Optimized Particle Cleanup (Runs every 3 seconds to keep FPS high)
-        if (Time.frameCount % 180 == 0)
+        void OnGUI()
         {
-            RemoveExtraParticles();
-        }
-    }
+            GUI.depth = -1000;
+            float s = Screen.height / 1080f;
+            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(s, s, 1));
 
-    void RemoveExtraParticles()
-    {
-        ParticleSystem[] particles = FindObjectsOfType<ParticleSystem>();
-        foreach (var p in particles)
-        {
-            var main = p.main;
-            main.maxParticles = Mathf.Max(5, (int)(main.maxParticles * 0.3f));
-        }
-    }
+            // Manual Touch Handling for Moving the Bubble
+            HandleDrag(s);
 
-    void OnGUI()
-    {
-        // 1. DRAW THE FLOATING TOGGLE BUTTON
-        // This button is always visible and used to open/close the main menu
-        buttonRect = GUI.Window(1, buttonRect, DrawToggleButton, "");
-
-        // 2. DRAW THE MAIN MENU (Only if showMenu is true)
-        if (showMenu)
-        {
-            windowRect = GUI.Window(0, windowRect, DrawMainMenu, "Silksong Lite Status");
-        }
-    }
-
-    // The small draggable button logic
-    void DrawToggleButton(int windowID)
-    {
-        if (GUI.Button(new Rect(0, 0, 80, 80), "MOD"))
-        {
-            showMenu = !showMenu;
-        }
-        GUI.DragWindow(new Rect(0, 0, 10000, 10000)); // Make the button draggable
-    }
-
-    // The main status window logic
-    void DrawMainMenu(int windowID)
-    {
-        float fps = 1.0f / deltaTime;
-        float perfPercent = (fps / 60f) * 100f;
-        if (perfPercent > 100f) perfPercent = 100f;
-
-        GUI.Label(new Rect(10, 25, 260, 30), $"FPS: {fps:0.} / 60");
-        GUI.Label(new Rect(10, 55, 260, 30), $"Efficiency: {perfPercent:0.}%");
-        
-        GUI.color = (perfPercent > 75) ? Color.green : (perfPercent > 45 ? Color.yellow : Color.red);
-        GUI.Label(new Rect(10, 85, 260, 30), $"Particles: REDUCED");
-        
-        GUI.color = Color.white;
-        if (GUI.Button(new Rect(10, 120, 260, 40), "CLOSE MENU"))
-        {
-            showMenu = false;
+            _winRect = GUI.Window(0, _winRect, DrawWindow, "Bridge (Drag Me)");
         }
 
-        GUI.DragWindow(new Rect(0, 0, 10000, 10000)); // Make the menu draggable
+        void HandleDrag(float scale)
+        {
+            Vector2 mousePos = new Vector2(Input.mousePosition.x / scale, (Screen.height - Input.mousePosition.y) / scale);
+
+            if (Input.GetMouseButtonDown(0) && _winRect.Contains(mousePos))
+            {
+                _isDragging = true;
+                _dragOffset = mousePos - new Vector2(_winRect.x, _winRect.y);
+            }
+
+            if (_isDragging)
+            {
+                _winRect.x = mousePos.x - _dragOffset.x;
+                _winRect.y = mousePos.y - _dragOffset.y;
+            }
+
+            if (Input.GetMouseButtonUp(0)) _isDragging = false;
+        }
+
+        void DrawWindow(int id)
+        {
+            string statusColor = _active ? "cyan" : "red";
+            if (GUILayout.Button($"<color={statusColor}>BRIDGE: {(_active ? "ON" : "OFF")}</color>", GUILayout.ExpandHeight(true)))
+                _active = !_active;
+        }
+
+        void Update()
+        {
+            if (!_active) return;
+
+            // Bench Bypass Logic
+            GameObject pd = GameObject.Find("PlayerData");
+            if (pd != null)
+            {
+                pd.SendMessage("SetBool", new object[] { "atBench", true }, SendMessageOptions.DontRequireReceiver);
+                pd.SendMessage("SetBool", new object[] { "canEquip", true }, SendMessageOptions.DontRequireReceiver);
+            }
+
+            // UI Interaction Unlock
+            GameObject[] allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+            foreach (GameObject obj in allObjects)
+            {
+                if (obj.name.ToLower().Contains("equip") || obj.name.ToLower().Contains("slot"))
+                {
+                    obj.SendMessage("set_interactable", true, SendMessageOptions.DontRequireReceiver);
+                }
+            }
+        }
     }
 }
