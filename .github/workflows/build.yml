@@ -1,24 +1,30 @@
 name: Build Mod
 on: [push]
 
+# This line clears the Node.js 20 warning by forcing the newer version
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 # Updated to v4
+        uses: actions/checkout@v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4 # Updated to v4
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '6.0.x'
 
       - name: Build
-        run: dotnet build /p:Configuration=Release
+        # We force the output directory so we know exactly where the file is
+        run: dotnet build /p:Configuration=Release --output ./publish
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4 # Updated to v4
+        uses: actions/upload-artifact@v4
         with:
           name: PerformanceBooster-DLL
-          path: bin/Release/netstandard2.0/PerformanceBooster.dll
+          # We now look in the 'publish' folder we created above
+          path: ./publish/PerformanceBooster.dll
           
