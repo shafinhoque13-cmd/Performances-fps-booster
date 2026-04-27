@@ -4,7 +4,7 @@
     <AssemblyName>PerformanceBooster</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
-    <NoWarn>MSB3277</NoWarn>
+    <NoWarn>MSB3277;CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,10 +15,13 @@
       <HintPath>libs/UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>libs/UnityEngine.ParticleSystemModule.dll</HintPath>
+    </Reference>
+    
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>libs/UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
-    
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>libs/UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
